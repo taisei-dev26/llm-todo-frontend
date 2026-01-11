@@ -1,10 +1,11 @@
 // 写経用ファイル
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import { EmptyIcon, LogoIcon, PlusIcon } from "./components/Icons";
+import { translateText } from "./api";
 
-// App_backup.tsx を参考にして、ここにコードを書いてください
+
 interface SubTask {
   id: string;
   title: string;
@@ -59,6 +60,20 @@ function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [inputvalue, setInputvalue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // APIの動作確認
+  useEffect(() => {
+    const testApi = async () => {
+      try {
+        console.log("APIコール開始")
+        const result = await translateText("I am Ueda", "Japanese")
+        console.log("翻訳結果:", result)
+      } catch (error) {
+        console.error("APIエラー:", error)
+      }
+    }
+    testApi()
+  })
 
   /**
    * 新しいTODOを追加するハンドラー
