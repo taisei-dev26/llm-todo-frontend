@@ -66,8 +66,16 @@
   gap: 8px;
 }
 
-.add-form input {
+.input-wrapper {
   flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.add-form input {
+  width: 100%;
   padding: 8px 12px;
   background: var(--color-gray-bg);
   border: 1px solid transparent;
@@ -88,7 +96,68 @@
   box-shadow: 0 0 0 3px rgba(152, 16, 250, 0.1);
 }
 
-.add-form button {
+/* AI Breakdown Button */
+.ai-breakdown-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: slideDown 0.2s ease-out;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+}
+
+.ai-breakdown-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.ai-breakdown-button:active {
+  transform: translateY(0);
+}
+
+.ai-breakdown-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ai-icon {
+  font-size: 14px;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Add Button */
+.add-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,22 +172,23 @@
   font-family: inherit;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.1s;
+  white-space: nowrap;
 }
 
-.add-form button:disabled {
+.add-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.add-form button:not(:disabled):hover {
+.add-button:not(:disabled):hover {
   opacity: 0.9;
 }
 
-.add-form button:not(:disabled):active {
+.add-button:not(:disabled):active {
   transform: scale(0.98);
 }
 
-.add-form button svg {
+.add-button svg {
   width: 16px;
   height: 16px;
 }
@@ -166,6 +236,95 @@
   text-align: center;
 }
 
+/* Todos Container */
+.todos-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Todo Card */
+.todo-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s;
+}
+
+.todo-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.todo-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.todo-title-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.todo-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.todo-title.completed {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.todo-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.todo-progress {
+  background: var(--color-purple-bg);
+  color: var(--color-purple-dark);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.subtasks-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 32px;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.subtask-title {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.subtask-title.completed {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
 /* Todo List */
 .todo-list {
   display: flex;
@@ -197,9 +356,9 @@
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  appearance: none;
+  background: white;
+  position: relative;
   margin-top: 2px;
 }
 
@@ -207,15 +366,20 @@
   border-color: var(--color-purple-light);
 }
 
-.todo-checkbox.checked {
-  background: var(--gradient-logo);
-  border-color: transparent;
+.todo-checkbox:checked {
+  background: var(--color-purple-light);
+  border-color: var(--color-purple-light);
 }
 
-.todo-checkbox.checked svg {
-  width: 12px;
-  height: 12px;
+.todo-checkbox:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   color: white;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 .todo-content {
@@ -260,24 +424,29 @@
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  appearance: none;
+  background: white;
+  position: relative;
 }
 
 .subtask-checkbox:hover {
   border-color: var(--color-purple-light);
 }
 
-.subtask-checkbox.checked {
+.subtask-checkbox:checked {
   background: var(--color-purple-light);
-  border-color: transparent;
+  border-color: var(--color-purple-light);
 }
 
-.subtask-checkbox.checked svg {
-  width: 10px;
-  height: 10px;
+.subtask-checkbox:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   color: white;
+  font-size: 10px;
+  font-weight: bold;
 }
 
 .subtask-text.completed {
@@ -288,19 +457,29 @@
 .todo-delete {
   background: none;
   border: none;
-  padding: 4px;
+  padding: 6px;
   cursor: pointer;
   color: var(--color-text-muted);
+  border-radius: 6px;
   opacity: 0;
-  transition: opacity 0.2s, color 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.todo-item:hover .todo-delete {
+.todo-card:hover .todo-delete {
   opacity: 1;
 }
 
 .todo-delete:hover {
-  color: #EF4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  transform: scale(1.05);
+}
+
+.todo-delete:active {
+  transform: scale(0.95);
 }
 
 .todo-delete svg {
@@ -373,17 +552,128 @@
   }
 }
 
+/* Delete Modal */
+.delete-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.delete-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.2s ease-out;
+}
+
+.delete-modal-header h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.delete-modal-content p {
+  margin: 0 0 8px 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.delete-warning {
+  color: #ef4444 !important;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.delete-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+
+.cancel-button {
+  padding: 8px 16px;
+  background: var(--color-gray-bg);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-gray-border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-button:hover {
+  background: var(--color-gray-border);
+}
+
+.delete-button {
+  padding: 8px 16px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-button:hover {
+  background: #dc2626;
+}
+
+.delete-button:active {
+  transform: scale(0.98);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .header h1 {
     font-size: 28px;
   }
-  
+
   .add-form {
     flex-direction: column;
   }
-  
-  .add-form button {
+
+  .input-wrapper {
+    width: 100%;
+  }
+
+  .add-button {
     width: 100%;
   }
 }
