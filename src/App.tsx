@@ -21,27 +21,49 @@ interface Todo {
 function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [inputvalue, setInputvalue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [showAiButton, setShowAiButton] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   /**
    * サブタスクの完了状態を切り替える
    */
   const toggleSubtask = (todoId: string, subtaskId: string) => {
     setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === todoId
-          ? {
-              ...todo,
-              subtasks: todo.subtasks.map((subtask) =>
-                subtask.id === subtaskId
-                  ? { ...subtask, completed: !subtask.completed }
-                  : subtask
-              ),
-            }
-          : todo
-      )
+      prev.map((todo) => {
+        if (todo.id !== todoId) return todo;
+
+        const updatedSubtasks = todo.subtasks.map((subtask) =>
+          subtask.id === subtaskId
+            ? { ...subtask, completed: !subtask.completed }
+            : subtask
+        );
+
+        // 全サブタスクが完了済みかチェック
+        const allSubtasksCompleted =
+          updatedSubtasks.length > 0 &&
+          updatedSubtasks.every((subtask) => subtask.completed);
+
+        // サブタスクに未完了があるかチェック
+        const hasIncompleteSubtasks = updatedSubtasks.some(
+          (subtask) => !subtask.completed
+        );
+
+        // 親タスクの完了状態を決定
+        let parentCompleted = todo.completed;
+        if (allSubtasksCompleted && !todo.completed) {
+          // 全サブタスク完了 → 親タスクも自動完了
+          parentCompleted = true;
+        } else if (hasIncompleteSubtasks && todo.completed) {
+          // サブタスクに未完了がある → 親タスクも未完了に
+          parentCompleted = false;
+        }
+
+        return {
+          ...todo,
+          subtasks: updatedSubtasks,
+          completed: parentCompleted,
+        };
+      })
     );
   };
 
@@ -50,9 +72,22 @@ function App() {
    */
   const toggleTodo = (todoId: string) => {
     setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === todoId ? { ...todo, completed: !todo.completed } : todo
-      )
+      prev.map((todo) => {
+        if (todo.id !== todoId) return todo;
+
+        const newCompleted = !todo.completed;
+
+        // 親タスクを完了にする場合、全サブタスクも完了にする
+        const updatedSubtasks = newCompleted
+          ? todo.subtasks.map((subtask) => ({ ...subtask, completed: true }))
+          : todo.subtasks.map((subtask) => ({ ...subtask, completed: false }));
+
+        return {
+          ...todo,
+          completed: newCompleted,
+          subtasks: updatedSubtasks,
+        };
+      })
     );
   };
 
@@ -62,42 +97,56 @@ function App() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputvalue(value);
-    setShowAiButton(value.trim().length > 0);
+    setShowAiButton(value.trim().length > 0 && !isAiLoading);
   };
 
   /**
    * AIでタスク分解するハンドラー
    */
   const handleAiBreakdown = async () => {
-    if (!inputvalue.trim() || isLoading) return;
+    if (!inputvalue.trim() || isAiLoading) return;
 
-    setIsLoading(true);
+    const taskTitle = inputvalue.trim();
+    const tempId = Date.now().toString();
+
+    // ローディング状態のタスクカードを即座に追加
+    const loadingTodo: Todo = {
+      id: tempId,
+      title: taskTitle,
+      completed: false,
+      subtasks: [], // 空のサブタスク（ローディング中）
+    };
+
+    setTodos((prev) => [loadingTodo, ...prev]);
+    setInputvalue("");
+    setShowAiButton(false);
+    setIsAiLoading(true);
 
     try {
-      const subtaskTitles = await breakdownTask(inputvalue.trim());
-      const newTodo: Todo = {
-        id: Date.now().toString(),
-        title: inputvalue.trim(),
+      const subtaskTitles = await breakdownTask(taskTitle);
+
+      // ローディングカードを完成したタスクに更新
+      const completedTodo: Todo = {
+        id: tempId,
+        title: taskTitle,
         completed: false,
         subtasks: subtaskTitles.map((title, idx) => ({
-          id: `${Date.now()}-${idx}`,
+          id: `${tempId}-${idx}`,
           title,
           completed: false,
         })),
       };
-      setTodos((prev) => [newTodo, ...prev]);
-      setInputvalue("");
-      setShowAiButton(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  /**
-   * 削除確認を表示するハンドラー
-   */
-  const showDeleteConfirm = (todoId: string) => {
-    setDeleteConfirm(todoId);
+      setTodos((prev) =>
+        prev.map((todo) => (todo.id === tempId ? completedTodo : todo))
+      );
+    } catch (error) {
+      // エラー時はローディングカードを削除
+      setTodos((prev) => prev.filter((todo) => todo.id !== tempId));
+      console.error("タスク分解に失敗しました:", error);
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   /**
@@ -105,14 +154,6 @@ function App() {
    */
   const deleteTodo = (todoId: string) => {
     setTodos((prev) => prev.filter((todo) => todo.id !== todoId));
-    setDeleteConfirm(null);
-  };
-
-  /**
-   * 削除をキャンセルするハンドラー
-   */
-  const cancelDelete = () => {
-    setDeleteConfirm(null);
   };
 
   /**
@@ -121,7 +162,7 @@ function App() {
    */
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputvalue.trim() || isLoading) return;
+    if (!inputvalue.trim() || isAiLoading) return;
 
     const newTodo: Todo = {
       id: Date.now().toString(),
@@ -146,32 +187,32 @@ function App() {
 
       {/* 入力フォーム */}
       <section className="add-form-container">
-        <form className="add-form" onSubmit={handleAddTodo}>
-          <div className="input-wrapper">
+        <div className="form-container">
+          <form className="add-form" onSubmit={handleAddTodo}>
             <input
               type="text"
               placeholder="新しいタスクを入力"
               value={inputvalue}
               onChange={handleInputChange}
-              disabled={isLoading}
+              disabled={isAiLoading}
             />
-            {showAiButton && (
-              <button
-                type="button"
-                className="ai-breakdown-button"
-                onClick={handleAiBreakdown}
-                disabled={isLoading}
-              >
-                <span className="ai-icon">✨</span>
-                AIで分解
-              </button>
-            )}
-          </div>
-          <button type="submit" className="add-button" disabled={isLoading}>
-            <PlusIcon />
-            追加
-          </button>
-        </form>
+            <button type="submit" className="add-button" disabled={isAiLoading}>
+              <PlusIcon />
+              追加
+            </button>
+          </form>
+          {showAiButton && (
+            <button
+              type="button"
+              className="ai-breakdown-button-full"
+              onClick={handleAiBreakdown}
+              disabled={isAiLoading}
+            >
+              <span className="ai-icon">✨</span>
+              AIで分解して追加
+            </button>
+          )}
+        </div>
       </section>
 
       {todos.length === 0 ? (
@@ -211,7 +252,7 @@ function App() {
                   )}
                   <button
                     className="todo-delete"
-                    onClick={() => showDeleteConfirm(todo.id)}
+                    onClick={() => deleteTodo(todo.id)}
                     title="タスクを削除"
                   >
                     <TrashIcon />
@@ -220,53 +261,36 @@ function App() {
               </div>
 
               <div className="subtasks-container">
-                {todo.subtasks.map((subtask) => (
-                  <div key={subtask.id} className="subtask-item">
-                    <input
-                      type="checkbox"
-                      checked={subtask.completed}
-                      onChange={() => toggleSubtask(todo.id, subtask.id)}
-                      className="subtask-checkbox"
-                    />
-                    <span
-                      className={`subtask-title ${
-                        subtask.completed ? "completed" : ""
-                      }`}
-                    >
-                      {subtask.title}
+                {todo.subtasks.length === 0 && isAiLoading ? (
+                  <div className="ai-loading-card">
+                    <div className="ai-loading-spinner"></div>
+                    <span className="ai-loading-text">
+                      AIがタスクを分解中...
                     </span>
                   </div>
-                ))}
+                ) : (
+                  todo.subtasks.map((subtask) => (
+                    <div key={subtask.id} className="subtask-item">
+                      <input
+                        type="checkbox"
+                        checked={subtask.completed}
+                        onChange={() => toggleSubtask(todo.id, subtask.id)}
+                        className="subtask-checkbox"
+                      />
+                      <span
+                        className={`subtask-title ${
+                          subtask.completed ? "completed" : ""
+                        }`}
+                      >
+                        {subtask.title}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           ))}
         </section>
-      )}
-
-      {/* 削除確認ダイアログ */}
-      {deleteConfirm && (
-        <div className="delete-modal-overlay" onClick={cancelDelete}>
-          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="delete-modal-header">
-              <h3>タスクを削除しますか？</h3>
-            </div>
-            <div className="delete-modal-content">
-              <p>{todos.find((t) => t.id === deleteConfirm)?.title}</p>
-              <p className="delete-warning">この操作は取り消せません。</p>
-            </div>
-            <div className="delete-modal-actions">
-              <button className="cancel-button" onClick={cancelDelete}>
-                キャンセル
-              </button>
-              <button
-                className="delete-button"
-                onClick={() => deleteTodo(deleteConfirm)}
-              >
-                削除
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
