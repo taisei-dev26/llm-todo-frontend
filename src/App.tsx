@@ -30,8 +30,10 @@ function App() {
   const toggleSubtask = (todoId: string, subtaskId: string) => {
     setTodos((prev) =>
       prev.map((todo) => {
+        // 対象のTodo以外はそのまま返す
         if (todo.id !== todoId) return todo;
 
+        // 指定されたサブタスクの完了状態を切り替え
         const updatedSubtasks = todo.subtasks.map((subtask) =>
           subtask.id === subtaskId
             ? { ...subtask, completed: !subtask.completed }
@@ -48,7 +50,7 @@ function App() {
           (subtask) => !subtask.completed
         );
 
-        // 親タスクの完了状態を決定
+        // 親タスクの完了状態を自動調整
         let parentCompleted = todo.completed;
         if (allSubtasksCompleted && !todo.completed) {
           // 全サブタスク完了 → 親タスクも自動完了
