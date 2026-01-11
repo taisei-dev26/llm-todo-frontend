@@ -1,7 +1,8 @@
 // 写経用ファイル
 
 import { useState } from "react";
-import { LogoIcon, PlusIcon } from "./components/Icons";
+import "./App.css";
+import { EmptyIcon, LogoIcon, PlusIcon } from "./components/Icons";
 
 // App_backup.tsx を参考にして、ここにコードを書いてください
 interface SubTask {
@@ -25,8 +26,34 @@ interface Todo {
  * @returns サブタスクのタイトル配列
  */
 const breakdownTask = async (task: string): Promise<string[]> => {
-  
-}
+  // 非同期待機
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  // キーワード辞書
+  const keywords: Record<string, string[]> = {
+    旅行: [
+      "目的地を決める",
+      "予算を設定する",
+      "宿泊先を予約する",
+      "交通手段を手配する",
+      "持ち物リストを作成する",
+    ],
+  };
+
+  // キーワードマッチング
+  for (const [keyword, subtasks] of Object.entries(keywords)) {
+    if (task.includes(keyword)) {
+      return subtasks;
+    }
+  }
+
+  return [
+    `${task}の計画を立てる`,
+    `必要なリソースを確認`,
+    `${task}を実行`,
+    "結果を確認する",
+  ];
+};
 
 function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -45,11 +72,19 @@ function App() {
     setIsLoading(true);
 
     try {
+      const subtaskTitles = await breakdownTask(inputvalue.trim());
       const newTodo: Todo = {
         id: Date.now().toString(),
         title: inputvalue.trim(),
         completed: false,
+        subtasks: subtaskTitles.map((title, idx) => ({
+          id: `${Date.now()}-${idx}`,
+          title,
+          completed: false,
+        })),
       };
+      setTodos((prev) => [newTodo, ...prev]);
+      setInputvalue("");
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +102,7 @@ function App() {
 
       {/* 入力フォーム */}
       <section className="add-form-container">
-        <form className="add-form">
+        <form className="add-form" onSubmit={handleAddTodo}>
           <input
             type="text"
             placeholder="新しいタスクを入力"
@@ -80,6 +115,18 @@ function App() {
           </button>
         </form>
       </section>
+
+      {todos.length === 0 ? (
+        <section className="empty-state">
+          <div className="empty-state-icon">
+            <EmptyIcon />
+          </div>
+          <h3>タスクがありません</h3>
+          <p>上のフォームから新しいタスクを追加してみましょう</p>
+        </section>
+      ) : (
+        <section>タスクあります</section>
+      )}
     </div>
   );
 }
